@@ -18,93 +18,60 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 console.log('Express app initialized');
 
-// MOVE TO TOP: CORS is the absolute priority for cross-domain communication
+// 1. ABSOLUTE PRIORITY: CORS must be the first middleware to run
 app.use(cors({
-    origin: true, // Permissive for debugging
+    origin: true,
     credentials: true
 }));
 
-// Diagnostic routes
-app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.4', env: process.env.NODE_ENV }));
-app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.4' }));
-app.get('/debug', (req, res) => {
-    const routes = [];
-    app._router.stack.forEach(r => {
-        if (r.route && r.route.path) routes.push(r.route.path);
-    });
-    res.json({ routes });
-});
-
-// CORS configuration (Keep for when we switch back)
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    'https://bridge-of-impact.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175'
-].filter(Boolean);
-
-// Middleware
+// 2. Body Parsing (before routes)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// app.use(helmet());
 app.use(morgan('dev'));
-app.use((req, res, next) => {
-    console.log(`>>> ${req.method} ${req.url}`);
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    next();
-});
 
-// Diagnostics already registered above. Moving on to routes...
+// 3. Diagnostics (v1.0.5)
+app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.5', env: process.env.NODE_ENV }));
+app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.5' }));
 
-// Routes
-console.log('Registering routes...');
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
+// 4. API ROUTES (High Priority)
+console.log('Registering API routes...');
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
 
-// Connect to Database AFTER routes registration
-console.log('Connecting to database...');
-connectDB();
-
-// Serve static assets in production (Only if files exist locally)
+// 5. Static Files & Production logic
 const clientDistPath = path.join(__dirname, '../client/dist');
-
 if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
-    console.log('Serving production static assets from client/dist');
+    console.log('Serving production static assets...');
     app.use(express.static(clientDistPath));
-    app.get('/*', (req, res) => {
-        res.sendFile(path.resolve(clientDistPath, 'index.html'));
-    });
-} else {
-    // Basic Route for development or split-hosting
-    app.get('/', (req, res) => {
-        res.json({
-            message: 'Bridge of Impact Initiative API is running...',
-            environment: process.env.NODE_ENV || 'production',
-            status: 'online',
-            mongodb: process.env.MONGO_URI || process.env.MONGODB_URI ? 'Connected' : 'Missing URI'
-        });
-    });
+    app.get('/*', (req, res) => res.sendFile(path.resolve(clientDistPath, 'index.html')));
 }
 
-// 404 Handler for unmatched routes
-app.use((req, res) => {
-    console.log(`>>> [404] ${req.method} ${req.url}`);
-    res.status(404).json({
-        message: "API Route Not Found",
-        path: req.url,
-        tip: "Check your VITE_API_URL settings"
+// 6. Generic Root Response
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Bridge of Impact Initiative API is running...',
+        version: '1.0.5',
+        status: 'online'
     });
 });
 
-// Error Middleware
+// 7. Explicit 404 for API
+app.use('/api/*', (req, res) => {
+    console.log(`>>> [API 404] ${req.method} ${req.url}`);
+    res.status(404).json({ success: false, error: `API route ${req.url} not found` });
+});
+
+// 8. Global 404 Handler
+app.use((req, res) => {
+    console.log(`>>> [Global 404] ${req.method} ${req.url}`);
+    res.status(404).json({ message: "Not Found", path: req.url });
+});
+
+// 9. Error Middleware
 app.use(require('./middleware/errorMiddleware'));
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV || 'production'} mode on port ${PORT}`);
+    console.log(`Server running on port ${PORT} (Version 1.0.5)`);
 });
