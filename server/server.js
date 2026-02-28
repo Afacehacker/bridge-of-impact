@@ -9,9 +9,17 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 
-// 0. IMMEDIATE HEALTHCHECK (Before anything else)
+// 0. ROOT & HEALTHCHECK
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Bridge of Impact Initiative API is Online 🚀',
+        version: VERSION,
+        status: 'ready'
+    });
+});
+
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'alive', boot_stage: 'initial', version: VERSION });
 });
