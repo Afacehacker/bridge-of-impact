@@ -46,6 +46,15 @@ app.use((req, res, next) => {
     next();
 });
 
+// Global health check for production
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+        version: '1.0.1'
+    });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
@@ -63,11 +72,6 @@ if (process.env.NODE_ENV === 'production') {
         res.json({ message: 'Bridge of Impact Initiative API is running...', env: process.env.NODE_ENV });
     });
 }
-
-// Global health check for production
-app.get('/health', (req, res) => {
-    res.json({ status: 'alive' });
-});
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {
