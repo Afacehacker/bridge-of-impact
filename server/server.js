@@ -68,16 +68,26 @@ const clientDistPath = path.join(__dirname, '../client/dist');
 if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
     console.log('Serving production static assets...');
     app.use(express.static(clientDistPath));
-    app.get('/*', (req, res) => {
-        if (!req.url.startsWith('/api')) {
-            res.sendFile(path.resolve(clientDistPath, 'index.html'));
-        }
-    });
 }
 
-// 7. Error Handling
-app.use('/api/:path*', (req, res) => res.status(404).json({ error: 'API route not found' }));
+// 7. Global Catch-all & Error Handling
 app.use(require('./middleware/errorMiddleware'));
+
+// The absolute final handler (Unified 404 & SPA Routing)
+app.use((req, res) => {
+    // 1. If it's an API request, return JSON 404
+    if (req.originalUrl.startsWith('/api')) {
+        return res.status(404).json({ error: 'API route not found' });
+    }
+
+    // 2. If it's a frontend request in production, serve index.html
+    if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
+        return res.sendFile(path.resolve(clientDistPath, 'index.html'));
+    }
+
+    // 3. Otherwise, generic 404
+    res.status(404).json({ message: "Route not found", path: req.originalUrl });
+});
 
 process.on('uncaughtException', (err) => {
     console.error('>>> CRITICAL EXCEPTION:', err);
