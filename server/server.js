@@ -16,17 +16,24 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const app = express();
-console.log('Express app initialized (Env:', process.env.NODE_ENV, ')');
+console.log('Express app initialized');
 
-// ABSOLUTELY FIRST: Diagnostic routes
-app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.3', env: process.env.NODE_ENV }));
-app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.3' }));
-
-// TEMP: Permissive CORS for debugging
+// MOVE TO TOP: CORS is the absolute priority for cross-domain communication
 app.use(cors({
-    origin: true,
+    origin: true, // Permissive for debugging
     credentials: true
 }));
+
+// Diagnostic routes
+app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.4', env: process.env.NODE_ENV }));
+app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.4' }));
+app.get('/debug', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach(r => {
+        if (r.route && r.route.path) routes.push(r.route.path);
+    });
+    res.json({ routes });
+});
 
 // CORS configuration (Keep for when we switch back)
 const allowedOrigins = [
