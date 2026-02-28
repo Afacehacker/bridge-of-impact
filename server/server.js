@@ -50,7 +50,7 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'alive',
         timestamp: new Date().toISOString(),
-        version: '1.0.1'
+        version: '1.0.2'
     });
 });
 
@@ -79,7 +79,7 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
     app.get('/', (req, res) => {
         res.json({
             message: 'Bridge of Impact Initiative API is running...',
-            environment: process.env.NODE_ENV || 'development',
+            environment: process.env.NODE_ENV || 'production',
             status: 'online',
             mongodb: process.env.MONGO_URI || process.env.MONGODB_URI ? 'Connected' : 'Missing URI'
         });
@@ -88,7 +88,12 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {
-    res.status(404).json({ message: "Not Found" });
+    console.log(`>>> [404] ${req.method} ${req.url}`);
+    res.status(404).json({
+        message: "API Route Not Found",
+        path: req.url,
+        tip: "Check your VITE_API_URL settings"
+    });
 });
 
 // Error Middleware
@@ -97,5 +102,5 @@ app.use(require('./middleware/errorMiddleware'));
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`Server running in ${process.env.NODE_ENV || 'production'} mode on port ${PORT}`);
 });
