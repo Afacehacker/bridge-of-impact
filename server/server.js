@@ -8,17 +8,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 
-// Ensure uploads directory exists (Robust handling for read-only systems)
-const uploadsDir = path.join(__dirname, 'uploads', 'cases');
-try {
-    if (!fs.existsSync(uploadsDir)) {
-        console.log('Creating uploads directory:', uploadsDir);
-        fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-} catch (err) {
-    console.warn(`[Warning] Could not ensure uploads directory: ${err.message}. This is normal on read-only serverless environments like Vercel.`);
-}
-
 const app = express();
 
 // 0. IMMEDIATE HEALTHCHECK (Before anything else)
