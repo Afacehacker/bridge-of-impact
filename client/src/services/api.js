@@ -39,8 +39,12 @@ export const getImageUrl = (path) => {
     if (path.startsWith('http')) return path;
     // If it's a local frontend asset (starts with /assets), return as is
     if (path.startsWith('/assets')) return path;
-    // If it's a server upload (starts with /uploads), prefix with server URL
-    const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
+    // In production, if API_URL is relative or same-domain, use window.location.origin
+    const serverUrl = import.meta.env.VITE_API_URL?.startsWith('http')
+        ? import.meta.env.VITE_API_URL.replace('/api', '')
+        : window.location.origin;
+
     return `${serverUrl}${path}`;
 };
 
