@@ -18,7 +18,13 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 console.log('Express app initialized (Env:', process.env.NODE_ENV, ')');
 
-// CORS configuration - MUST be before other middleware
+// TEMP: Permissive CORS for debugging
+app.use(cors({
+    origin: true, // Reflect request origin
+    credentials: true
+}));
+
+// CORS configuration (Keep for when we switch back)
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     'https://bridge-of-impact.vercel.app',
@@ -26,23 +32,6 @@ const allowedOrigins = [
     'http://localhost:5174',
     'http://localhost:5175'
 ].filter(Boolean);
-
-app.use(cors({
-    origin: (origin, callback) => {
-        console.log('--- CORS Check ---');
-        console.log('Request Origin:', origin);
-        console.log('Allowed Origins:', allowedOrigins);
-
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some(ao => origin.includes(ao))) {
-            console.log('CORS Result: ALLOWED');
-            callback(null, true);
-        } else {
-            console.log('CORS Result: BLOCKED');
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
-}));
 
 // Middleware
 app.use(express.json());
