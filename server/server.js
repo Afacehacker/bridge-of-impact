@@ -9,7 +9,7 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 // START LISTENING IMMEDIATELY
 const PORT = process.env.PORT || 5000;
@@ -23,71 +23,42 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 // 1. Diagnostics
 app.get('/diag', (req, res) => res.json({
     status: 'ok',
-    version: '1.0.9',
+    version: VERSION,
     env: process.env.NODE_ENV,
     uptime: process.uptime(),
     port: PORT
 }));
 
 // 2. Middleware & CORS
-app.use(cors({ origin: true, credentials: true }));
+const allowedOrigins = [
+    'https://bridge-of-impact.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('CORS Blocked for origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// MODIFIED for Manual Account Payment - New route for manual payment details
-app.post('/api/donations/manual-payment-details', async (req, res) => {
-    const { caseId, amount, name, email } = req.body;
-
-    if (!caseId || !amount) {
-        return res.status(400).json({ success: false, message: 'Case ID and amount are required.' });
-    }
-
-    const manualAccount = {
-        accountNumber: '8025329616',
-        bankName: 'OPAY',
-        accountName: 'Bridge of Impact Initiative',
-        totalToPay: amount
-    };
-
-    // Create pending donation record for manual tracking
-    // Assuming Donation model is available via require('./models/Donation') or similar
-    // For this example, we'll mock it or assume it's imported if needed.
-    // If Donation model is not globally available, it needs to be imported here.
-    // const Donation = require('./models/Donation'); // Example import
-
-    // Placeholder for actual Donation creation logic
-    // This part requires the Donation model to be defined and imported.
-    // For now, we'll simulate the response.
-    const donation = {
-        _id: new Date().getTime(), // Mock ID
-        case: caseId,
-        donorName: name || 'Anonymous',
-        donorEmail: email,
-        amount: amount,
-        paymentReference: `MANUAL-${Date.now()}`,
-        status: 'pending'
-    };
-
-    // In a real application, you would save this to your database:
-    // const donation = await Donation.create({
-    //     case: caseId,
-    //     donorName: name || 'Anonymous',
-    //     donorEmail: email,
-    //     amount: amount,
-    //     paymentReference: `MANUAL-${Date.now()}`,
-    //     status: 'pending'
-    // });
-
-    res.status(200).json({
-        success: true,
-        isManual: true,
-        data: manualAccount,
-        donationId: donation._id
-    });
-});
-
-// 3. Ensure uploads directory
+// Ensure uploads directory
 const uploadsDir = path.join(__dirname, 'uploads', 'cases');
 try {
     if (!fs.existsSync(uploadsDir)) {
@@ -97,7 +68,7 @@ try {
     console.warn('[Warning] Uploads dir skip:', e.message);
 }
 
-// 4. ROOT & HEALTHCHECK (Moved to guaranteed location)
+// 3. ROOT & HEALTHCHECK
 app.get('/', (req, res) => {
     res.status(200).json({
         message: 'Bridge of Impact Initiative API is Online 🚀',
@@ -107,7 +78,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'alive', boot_stage: 'initial', version: VERSION });
+    res.status(200).json({ status: 'alive', boot_stage: 'active', version: VERSION });
 });
 
 // 4. API ROUTES
