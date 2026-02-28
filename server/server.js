@@ -9,9 +9,40 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.2.1';
+const VERSION = '1.3.0';
 
-// START LISTENING IMMEDIATELY
+// 1. CORS CONFIGURATION (MUST BE FIRST)
+const allowedOrigins = [
+    'https://bridge-of-impact.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Manual Header Fallback (Just in case)
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle Preflight
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// 2. START LISTENING IMMEDIATELY
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('------------------------------------------------');
@@ -20,7 +51,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('------------------------------------------------');
 });
 
-// 1. Diagnostics
+// 3. Diagnostics
 app.get('/diag', (req, res) => res.json({
     status: 'ok',
     version: VERSION,
@@ -28,31 +59,6 @@ app.get('/diag', (req, res) => res.json({
     uptime: process.uptime(),
     port: PORT
 }));
-
-// 2. Middleware & CORS
-const allowedOrigins = [
-    'https://bridge-of-impact.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            console.log('CORS Blocked for origin:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Handle preflight requests
-app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
