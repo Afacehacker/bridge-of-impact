@@ -29,15 +29,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// 3. Diagnostics (v1.0.5)
-app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.5', env: process.env.NODE_ENV }));
-app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.5' }));
+// 3. Diagnostics (v1.0.6)
+app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.6', env: process.env.NODE_ENV }));
+app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.6' }));
 
 // 4. API ROUTES (High Priority)
 console.log('Registering API routes...');
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
+
+// 4.1 Database Connection (Critical)
+console.log('Connecting to database...');
+connectDB();
 
 // 5. Static Files & Production logic
 const clientDistPath = path.join(__dirname, '../client/dist');
@@ -51,7 +55,7 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
 app.get('/', (req, res) => {
     res.json({
         message: 'Bridge of Impact Initiative API is running...',
-        version: '1.0.5',
+        version: '1.0.6',
         status: 'online'
     });
 });
@@ -73,5 +77,5 @@ app.use(require('./middleware/errorMiddleware'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} (Version 1.0.5)`);
+    console.log(`Server running on port ${PORT} (Version 1.0.6)`);
 });
