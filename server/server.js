@@ -62,7 +62,9 @@ app.use('/api/donations', require('./routes/donationRoutes'));
 
 // 4.1 Database Connection (Critical)
 console.log('Connecting to database...');
-connectDB();
+(async () => {
+    await connectDB();
+})();
 
 // 5. Static Files & Production logic
 const clientDistPath = path.join(__dirname, '../client/dist');
