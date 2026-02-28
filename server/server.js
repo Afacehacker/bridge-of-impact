@@ -76,7 +76,7 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
 }
 
 // 7. Error Handling
-app.use('/api/*', (req, res) => res.status(404).json({ error: 'API route not found' }));
+app.use('/api/:path*', (req, res) => res.status(404).json({ error: 'API route not found' }));
 app.use(require('./middleware/errorMiddleware'));
 
 process.on('uncaughtException', (err) => {
