@@ -1,14 +1,22 @@
 console.log('--- Server Booting ---');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
-console.log('Environment loaded:', process.env.NODE_ENV);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads', 'cases');
+if (!fs.existsSync(uploadsDir)) {
+    console.log('Creating uploads directory:', uploadsDir);
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const app = express();
-console.log('Express app initialized');
+console.log('Express app initialized (Env:', process.env.NODE_ENV, ')');
 
 // CORS configuration - MUST be before other middleware
 const allowedOrigins = [
