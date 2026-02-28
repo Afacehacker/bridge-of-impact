@@ -18,30 +18,29 @@ exports.initializeDonation = async (req, res, next) => {
             return res.status(404).json({ success: false, error: 'Case not found' });
         }
 
-        // Initialize Paystack transaction
-        // Paystack expects amount in kobo
-        const paystackData = await paystack.initializeTransaction({
-            amount: amount * 100,
-            email,
-            metadata: {
-                caseId,
-                donorName: name || 'Anonymous'
-            }
-        });
+        // MODIFIED for Manual Account Payment
+        const manualAccount = {
+            accountNumber: '8025329616',
+            bankName: 'OPAY',
+            accountName: 'Bridge of Impact Initiative',
+            totalToPay: amount
+        };
 
-        // Create pending donation record
-        await Donation.create({
+        // Create pending donation record for manual tracking
+        const donation = await Donation.create({
             case: caseId,
             donorName: name || 'Anonymous',
             donorEmail: email,
             amount: amount,
-            paymentReference: paystackData.data.reference,
+            paymentReference: `MANUAL-${Date.now()}`,
             status: 'pending'
         });
 
         res.status(200).json({
             success: true,
-            data: paystackData.data
+            isManual: true,
+            data: manualAccount,
+            donationId: donation._id
         });
     } catch (err) {
         next(err);

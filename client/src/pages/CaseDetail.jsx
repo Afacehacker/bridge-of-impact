@@ -26,6 +26,8 @@ const CaseDetail = () => {
         fetchCase();
     }, [id]);
 
+    const [donationDetails, setDonationDetails] = useState(null);
+
     const handleDonation = async (e) => {
         e.preventDefault();
         if (!form.amount || !form.email) {
@@ -39,37 +41,31 @@ const CaseDetail = () => {
                 caseId: id
             });
 
-            // Paystack initialization
-            const handler = window.PaystackPop.setup({
-                key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_your_public_key',
-                email: form.email,
-                amount: form.amount * 100, // Kobo
-                ref: res.data.data.reference,
-                onClose: () => {
-                    setIsDonating(false);
-                    setStatus({ type: 'info', message: 'Transaction cancelled' });
-                },
-                callback: async (response) => {
-                    // Verify on backend
-                    try {
-                        await donationsAPI.verify(response.reference);
-                        setStatus({ type: 'success', message: 'Thank you for your donation! Impact updated.' });
-                        // Refresh case data
-                        const updated = await casesAPI.getOne(id);
-                        setFundraisingCase(updated.data.data);
-                        setForm({ amount: '', email: '', name: '' });
-                    } catch (err) {
-                        setStatus({ type: 'error', message: 'Verification failed. Please contact support.' });
-                    } finally {
+            if (res.data.isManual) {
+                setDonationDetails(res.data.data);
+                setStatus({
+                    type: 'success',
+                    message: 'Donation initialization successful. Please complete the bank transfer below.'
+                });
+            } else {
+                // Original Paystack flow (if ever re-enabled)
+                const handler = window.PaystackPop.setup({
+                    key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_your_public_key',
+                    email: form.email,
+                    amount: form.amount * 100,
+                    ref: res.data.data.reference,
+                    onClose: () => setIsDonating(false),
+                    callback: () => {
                         setIsDonating(false);
+                        setStatus({ type: 'success', message: 'Thank you for your donation!' });
                     }
-                }
-            });
-            handler.openIframe();
-
+                });
+                handler.openIframe();
+            }
         } catch (err) {
             console.error(err);
-            setStatus({ type: 'error', message: 'Could not initialize payment' });
+            setStatus({ type: 'error', message: 'Could not initialize donation' });
+        } finally {
             setIsDonating(false);
         }
     };
@@ -222,15 +218,64 @@ const CaseDetail = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={isDonating || fundraisingCase.status === 'completed'}
+                                    disabled={isDonating || fundraisingCase.status === 'completed' || !!donationDetails}
                                     className="w-full btn-primary h-16 text-lg tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isDonating ? <Loader2 className="animate-spin mr-2" /> : <CreditCard className="mr-2" />}
-                                    {fundraisingCase.status === 'completed' ? 'Goal Reached!' : 'Secure Payment'}
+                                    {fundraisingCase.status === 'completed' ? 'Goal Reached!' : donationDetails ? 'Please Complete Transfer' : 'Initialize Donation'}
                                 </button>
 
+                                {donationDetails && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="p-8 bg-primary text-white rounded-[2rem] border border-white/20 space-y-6 shadow-2xl relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                        <div className="text-center space-y-2">
+                                            <p className="text-xs font-bold text-accent uppercase tracking-widest">Bank Transfer Details</p>
+                                            <h5 className="text-xl font-bold">Manual Payment</h5>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => {
+                                                navigator.clipboard.writeText(donationDetails.accountNumber);
+                                                alert('Account number copied!');
+                                            }}>
+                                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Account Number</p>
+                                                <p className="text-2xl font-mono font-bold tracking-widest flex justify-between items-center text-accent">
+                                                    {donationDetails.accountNumber}
+                                                    <Share2 size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Bank Name</p>
+                                                    <p className="font-bold">{donationDetails.bankName}</p>
+                                                </div>
+                                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Total Amount</p>
+                                                    <p className="font-bold">₦{Number(donationDetails.totalToPay).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Account Name</p>
+                                                <p className="font-bold text-accent">{donationDetails.accountName}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-white/10 text-[10px] text-center italic text-slate-400">
+                                            Please send a screenshot of the receipt to <br />
+                                            <span className="text-white not-italic font-bold">support@bridgeofimpact.org</span> <br />
+                                            or WhatsApp <span className="text-white not-italic font-bold">+234 802 532 9616</span> for verification.
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 <p className="text-center text-xs text-slate-400 font-medium">
-                                    Payments secured by <strong>Paystack</strong>
+                                    Securely processed via Bank Transfer
                                 </p>
                             </form>
 
