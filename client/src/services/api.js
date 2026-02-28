@@ -35,17 +35,25 @@ export const donations = {
 
 export const getImageUrl = (path) => {
     if (!path) return '';
-    // If it's a full URL, return as is
+
+    // 1. If it's a full remote URL (like Unsplash), return as is
     if (path.startsWith('http')) return path;
-    // If it's a local frontend asset (starts with /assets), return as is
-    if (path.startsWith('/assets')) return path;
 
-    // In production, if API_URL is relative or same-domain, use window.location.origin
-    const serverUrl = import.meta.env.VITE_API_URL?.startsWith('http')
-        ? import.meta.env.VITE_API_URL.replace('/api', '')
-        : window.location.origin;
+    // 2. Identify the backend base URL (remove /api suffix)
+    const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
-    return `${serverUrl}${path}`;
+    // 3. Handle paths starting with /assets (these are local to frontend)
+    if (path.startsWith('/assets')) {
+        return path;
+    }
+
+    // 4. Handle paths starting with /uploads (these are on our Render server)
+    if (path.startsWith('/uploads')) {
+        return `${backendUrl}${path}`;
+    }
+
+    // 5. If it's just the filename (like the controller saves it), assume it's under /uploads/cases
+    return `${backendUrl}/uploads/cases/${path}`;
 };
 
 export default API;

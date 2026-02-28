@@ -67,15 +67,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Ensure uploads directory
-const uploadsDir = path.join(__dirname, 'uploads', 'cases');
+// Ensure uploads directory exists and serve it statically
+const uploadsDir = path.join(__dirname, 'uploads');
+const casesDir = path.join(uploadsDir, 'cases');
+
 try {
-    if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
+    if (!fs.existsSync(casesDir)) {
+        fs.mkdirSync(casesDir, { recursive: true });
+        console.log('>>> [FS] Created uploads/cases directory');
     }
 } catch (e) {
-    console.warn('[Warning] Uploads dir skip:', e.message);
+    console.warn('[Warning] Uploads dir creation skip:', e.message);
 }
+
+// SERVE UPLOADS FOLDER PUBLICLY
+app.use('/uploads', express.static(uploadsDir));
 
 // 4. API ROUTES
 console.log('Registering routes...');
