@@ -9,17 +9,18 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
+const VERSION = '1.1.0';
 
 // 0. IMMEDIATE HEALTHCHECK (Before anything else)
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'alive', boot_stage: 'initial' });
+    res.status(200).json({ status: 'alive', boot_stage: 'initial', version: VERSION });
 });
 
 // START LISTENING IMMEDIATELY
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('------------------------------------------------');
-    console.log(`🚀 INITIAL BOOT: Listening on port ${PORT}`);
+    console.log(`🚀 INITIAL BOOT: Listening on port ${PORT} (v${VERSION})`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     console.log('------------------------------------------------');
 });
