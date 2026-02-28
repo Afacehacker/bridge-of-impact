@@ -60,16 +60,25 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
 
-// Serve static assets in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve static assets in production (Only if files exist locally)
+const fs = require('fs');
+const clientDistPath = path.join(__dirname, '../client/dist');
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
+    console.log('Serving production static assets from client/dist');
+    app.use(express.static(clientDistPath));
     app.get('/*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, '..', 'client', 'dist', 'index.html'));
+        res.sendFile(path.resolve(clientDistPath, 'index.html'));
     });
 } else {
-    // Basic Route for development
+    // Basic Route for development or split-hosting
     app.get('/', (req, res) => {
-        res.json({ message: 'Bridge of Impact Initiative API is running...', env: process.env.NODE_ENV });
+        res.json({
+            message: 'Bridge of Impact Initiative API is running...',
+            environment: process.env.NODE_ENV || 'development',
+            status: 'online',
+            mongodb: process.env.MONGO_URI || process.env.MONGODB_URI ? 'Connected' : 'Missing URI'
+        });
     });
 }
 
