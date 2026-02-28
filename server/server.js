@@ -1,14 +1,14 @@
+console.log('--- Server Booting ---');
 require('dotenv').config();
+console.log('Environment loaded:', process.env.NODE_ENV);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 
-// Connect to Database
-connectDB();
-
 const app = express();
+console.log('Express app initialized');
 
 // CORS configuration - MUST be before other middleware
 const allowedOrigins = [
@@ -56,9 +56,15 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
+console.log('Registering routes...');
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
+
+// Connect to Database AFTER routes registration
+console.log('Connecting to database...');
+connectDB();
 
 // Serve static assets in production (Only if files exist locally)
 const fs = require('fs');
