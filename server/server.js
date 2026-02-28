@@ -9,9 +9,24 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 
-// 1. CORS CONFIGURATION (MUST BE FIRST)
+// 1. ROOT & HEALTH (MUST BE TOP)
+app.get('/', (req, res) => {
+    console.log('>>> [HIT] Root Path (/) accessed successfully');
+    res.status(200).json({
+        message: 'Bridge of Impact Initiative API is Online 🚀',
+        version: VERSION,
+        status: 'ready'
+    });
+});
+
+app.get('/health', (req, res) => {
+    console.log('>>> [HIT] Health Path (/health) accessed successfully');
+    res.status(200).json({ status: 'alive', boot_stage: 'active', version: VERSION });
+});
+
+// 2. CORS CONFIGURATION (STRICT)
 const allowedOrigins = [
     'https://bridge-of-impact.vercel.app',
     'http://localhost:5173',
@@ -25,7 +40,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Manual Header Fallback (Just in case)
+// Manual Header Fallback (Guaranteed CORS)
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
@@ -42,7 +57,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 2. START LISTENING IMMEDIATELY
+// 3. START LISTENING
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('------------------------------------------------');
@@ -51,15 +66,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('------------------------------------------------');
 });
 
-// 3. Diagnostics
-app.get('/diag', (req, res) => res.json({
-    status: 'ok',
-    version: VERSION,
-    env: process.env.NODE_ENV,
-    uptime: process.uptime(),
-    port: PORT
-}));
-
+// 4. API ROUTES & MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -73,19 +80,6 @@ try {
 } catch (e) {
     console.warn('[Warning] Uploads dir skip:', e.message);
 }
-
-// 3. ROOT & HEALTHCHECK
-app.get('/', (req, res) => {
-    res.status(200).json({
-        message: 'Bridge of Impact Initiative API is Online 🚀',
-        version: VERSION,
-        status: 'ready'
-    });
-});
-
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'alive', boot_stage: 'active', version: VERSION });
-});
 
 // 4. API ROUTES
 console.log('Registering routes...');
