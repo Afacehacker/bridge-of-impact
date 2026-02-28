@@ -13,6 +13,7 @@ const app = express();
 // CORS configuration - MUST be before other middleware
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    'https://bridge-of-impact.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175'
@@ -23,7 +24,7 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.some(ao => origin.includes(ao))) {
             callback(null, true);
         } else {
             console.log('CORS Blocked for:', origin);
