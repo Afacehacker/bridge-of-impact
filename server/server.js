@@ -29,16 +29,19 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
+        console.log('--- CORS Check ---');
+        console.log('Request Origin:', origin);
+        console.log('Allowed Origins:', allowedOrigins);
+
         if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some(ao => origin.includes(ao))) {
+            console.log('CORS Result: ALLOWED');
             callback(null, true);
         } else {
-            console.log('Blocked by CORS:', origin);
+            console.log('CORS Result: BLOCKED');
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true
 }));
 
 // Middleware
