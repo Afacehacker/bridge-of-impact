@@ -60,9 +60,14 @@ if (process.env.NODE_ENV === 'production') {
 } else {
     // Basic Route for development
     app.get('/', (req, res) => {
-        res.json({ message: 'Bridge of Impact Initiative API is running...' });
+        res.json({ message: 'Bridge of Impact Initiative API is running...', env: process.env.NODE_ENV });
     });
 }
+
+// Global health check for production
+app.get('/health', (req, res) => {
+    res.json({ status: 'alive' });
+});
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {
