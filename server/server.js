@@ -44,7 +44,6 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // app.use(helmet());
 app.use(morgan('dev'));
@@ -75,7 +74,6 @@ console.log('Connecting to database...');
 connectDB();
 
 // Serve static assets in production (Only if files exist locally)
-const fs = require('fs');
 const clientDistPath = path.join(__dirname, '../client/dist');
 
 if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
