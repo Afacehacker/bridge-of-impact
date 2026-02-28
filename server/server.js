@@ -22,7 +22,26 @@ try {
 const app = express();
 console.log('Express app initialized');
 
-// 1. ABSOLUTE PRIORITY: CORS must be the first middleware to run
+// 0. HEALTHCHECK (Absolute First Priority)
+// This must be before any other middleware or routes to ensure healthchecks pass
+app.get('/health', (req, res) => {
+    console.log(`[Healthcheck] Received request. Server is alive.`);
+    res.status(200).json({
+        status: 'alive',
+        version: '1.0.8',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/diag', (req, res) => res.json({
+    status: 'ok',
+    version: '1.0.8',
+    env: process.env.NODE_ENV,
+    uptime: process.uptime(),
+    port: process.env.PORT || 5000
+}));
+
+// 1. ABSOLUTE PRIORITY: CORS must be the first middleware to run after healthcheck
 app.use(cors({
     origin: true,
     credentials: true
@@ -33,14 +52,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// 3. Diagnostics (v1.0.7)
-app.get('/diag', (req, res) => res.json({
-    status: 'ok',
-    version: '1.0.7',
-    env: process.env.NODE_ENV,
-    uptime: process.uptime()
-}));
-app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.7' }));
+// 3. Diagnostics (v1.0.8) moved to top
 
 // 4. API ROUTES (High Priority)
 console.log('Registering API routes...');
@@ -95,12 +107,37 @@ app.use((req, res) => {
 // 9. Error Middleware
 app.use(require('./middleware/errorMiddleware'));
 
-// Start server if run directly
-if (require.main === module) {
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT} (Version 1.0.7)`);
-    });
+// 10. Process Error Handlers
+process.on('uncaughtException', (err) => {
+    console.error('>>> CRITICAL: UNCAUGHT EXCEPTION');
+    console.error(err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('>>> CRITICAL: UNHANDLED REJECTION');
+    console.error(reason);
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+// On Railway/Render/Local, we should always listen
+// On Vercel, it might trigger a warning but it's required for healthchecks on other platforms
+const startServer = () => {
+    try {
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log('------------------------------------------------');
+            console.log(`🚀 Server running on port ${PORT} (Version 1.0.8)`);
+            console.log(`Environment: ${process.env.NODE_ENV}`);
+            console.log('------------------------------------------------');
+        });
+    } catch (err) {
+        console.error('Failed to start server:', err);
+    }
+};
+
+if (require.main === module || process.env.RAILWAY_ENVIRONMENT || process.env.RENDER) {
+    startServer();
 }
 
 // Export for Vercel
