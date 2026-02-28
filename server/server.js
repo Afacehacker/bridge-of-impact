@@ -9,11 +9,12 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.3.2';
+const VERSION = '1.3.3';
 
 // 1. GLOBAL CORS & HEADERS (MUST BE FIRST)
 const allowedOrigins = [
     'https://bridge-of-impact.vercel.app',
+    'https://bridge-of-impact-git-main-afacehackers-projects.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000'
 ];
@@ -28,6 +29,10 @@ app.use(cors({
 // Manual Header Fallback (Guaranteed CORS for every route)
 app.use((req, res, next) => {
     const origin = req.headers.origin;
+    if (origin) {
+        console.log(`>>> [CORS DEBUG] Request from Origin: ${origin}`);
+    }
+
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
