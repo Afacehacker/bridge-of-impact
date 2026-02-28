@@ -18,9 +18,13 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 console.log('Express app initialized (Env:', process.env.NODE_ENV, ')');
 
+// ABSOLUTELY FIRST: Diagnostic routes
+app.get('/diag', (req, res) => res.json({ status: 'ok', version: '1.0.3', env: process.env.NODE_ENV }));
+app.get('/health', (req, res) => res.json({ status: 'alive', version: '1.0.3' }));
+
 // TEMP: Permissive CORS for debugging
 app.use(cors({
-    origin: true, // Reflect request origin
+    origin: true,
     credentials: true
 }));
 
@@ -45,14 +49,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Global health check for production
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'alive',
-        timestamp: new Date().toISOString(),
-        version: '1.0.2'
-    });
-});
+// Diagnostics already registered above. Moving on to routes...
 
 // Routes
 console.log('Registering routes...');
