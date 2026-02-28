@@ -9,7 +9,7 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.3.3';
+const VERSION = '1.3.5';
 
 // 1. GLOBAL CORS & HEADERS (MUST BE FIRST)
 const allowedOrigins = [
@@ -80,8 +80,13 @@ try {
     console.warn('[Warning] Uploads dir creation skip:', e.message);
 }
 
-// SERVE UPLOADS FOLDER PUBLICLY
-app.use('/uploads', express.static(uploadsDir));
+// SERVE UPLOADS FOLDER WITH EXPLICIT CORS (FOR PERMANENT ACCESS)
+app.use('/uploads', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+}, express.static(uploadsDir));
 
 // 4. API ROUTES
 console.log('Registering routes...');

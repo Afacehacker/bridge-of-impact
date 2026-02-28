@@ -281,24 +281,49 @@ const AdminDashboard = () => {
                                             <option>Social Welfare</option>
                                         </select>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2">Upload Image</label>
-                                        <div className="relative h-14 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center px-6">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                                onChange={e => setSelectedFile(e.target.files[0])}
-                                            />
-                                            <span className="text-slate-400 text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
-                                                {selectedFile ? selectedFile.name : (currentCase.image ? 'Change existing image' : 'Choose image file')}
-                                            </span>
-                                            <Plus size={18} className="ml-auto text-slate-400" />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2">Case Image (Choose one option below)</label>
+
+                                            {/* File Upload Option */}
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2 uppercase">Option A: Upload File</p>
+                                                <div className="relative h-14 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center px-6 group hover:border-primary/30 transition-colors">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                        onChange={e => {
+                                                            setSelectedFile(e.target.files[0]);
+                                                            setCurrentCase({ ...currentCase, image: '' }); // Clear URL if file chosen
+                                                        }}
+                                                    />
+                                                    <span className="text-slate-400 text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
+                                                        {selectedFile ? `Selected: ${selectedFile.name}` : (currentCase.image && !currentCase.image.startsWith('http') ? 'Keep Current Upload' : 'Choose image file')}
+                                                    </span>
+                                                    <Plus size={18} className="ml-auto text-slate-400" />
+                                                </div>
+                                            </div>
+
+                                            {/* URL Option */}
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2 uppercase">Option B: Image Web URL (Recommended for Permanent Images)</p>
+                                                <input
+                                                    type="url"
+                                                    placeholder="e.g. https://images.unsplash.com/..."
+                                                    className="w-full h-14 bg-slate-50/50 border border-slate-100 rounded-2xl px-6 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                                                    value={currentCase.image && currentCase.image.startsWith('http') ? currentCase.image : ''}
+                                                    onChange={e => {
+                                                        setCurrentCase({ ...currentCase, image: e.target.value });
+                                                        setSelectedFile(null); // Clear file if URL is typed
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2">Description</label>
-                                        <textarea required className="w-full h-32 bg-slate-50/50 border border-slate-100 rounded-2xl p-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={currentCase.description} onChange={e => setCurrentCase({ ...currentCase, description: e.target.value })} />
+                                        <textarea required className="w-full h-40 bg-slate-50/50 border border-slate-100 rounded-2xl p-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={currentCase.description} onChange={e => setCurrentCase({ ...currentCase, description: e.target.value })} />
                                     </div>
                                 </div>
 
