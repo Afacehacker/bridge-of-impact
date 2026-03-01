@@ -46,7 +46,7 @@ exports.createCase = async (req, res, next) => {
 
         let image = req.body.image;
         if (req.file) {
-            image = `/uploads/cases/${req.file.filename}`;
+            image = req.file.path; // Cloudinary URL
         }
 
         if (!image) {
@@ -85,7 +85,7 @@ exports.updateCase = async (req, res, next) => {
         }
 
         if (req.file) {
-            req.body.image = `/uploads/cases/${req.file.filename}`;
+            req.body.image = req.file.path; // Cloudinary URL
         }
 
         fundraisingCase = await Case.findByIdAndUpdate(req.params.id, req.body, {
