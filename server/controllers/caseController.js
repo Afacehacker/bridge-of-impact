@@ -1,4 +1,27 @@
 const Case = require('../models/Case');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Helper to upload buffer to Cloudinary via stream
+const uploadToCloudinary = (fileBuffer) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'bridge-of-impact', transformation: [{ width: 1000, height: 600, crop: 'limit' }] },
+            (error, result) => {
+                if (result) resolve(result);
+                else reject(error);
+            }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(stream);
+    });
+};
 
 // @desc    Get all cases
 // @route   GET /api/cases
@@ -46,7 +69,8 @@ exports.createCase = async (req, res, next) => {
 
         let image = req.body.image;
         if (req.file) {
-            image = req.file.path; // Cloudinary URL
+            const result = await uploadToCloudinary(req.file.buffer);
+            image = result.secure_url;
         }
 
         if (!image) {
@@ -85,7 +109,8 @@ exports.updateCase = async (req, res, next) => {
         }
 
         if (req.file) {
-            req.body.image = req.file.path; // Cloudinary URL
+            const result = await uploadToCloudinary(req.file.buffer);
+            req.body.image = result.secure_url;
         }
 
         fundraisingCase = await Case.findByIdAndUpdate(req.params.id, req.body, {

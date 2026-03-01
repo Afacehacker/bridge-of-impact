@@ -23,7 +23,7 @@
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "cloudinary": "^2.5.1",
-    "multer-storage-cloudinary": "^4.0.0"
+    "streamifier": "^0.1.1"
   },
   "engines": {
     "node": "22.19.0"
