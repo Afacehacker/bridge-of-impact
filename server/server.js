@@ -9,9 +9,9 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 
 const app = express();
-const VERSION = '1.3.5';
+const VERSION = '1.3.6';
 
-// 1. GLOBAL CORS & HEADERS (MUST BE FIRST)
+// 1. GLOBAL CORS
 const allowedOrigins = [
     'https://bridge-of-impact.vercel.app',
     'https://bridge-of-impact-git-main-afacehackers-projects.vercel.app',
@@ -20,73 +20,34 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
 }));
 
-// Manual Header Fallback (Guaranteed CORS for every route)
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-        console.log(`>>> [CORS DEBUG] Request from Origin: ${origin}`);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    next();
-});
-
-// 2. ROOT & HEALTHCHECK (TOP LEVEL)
-app.get('/', (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'BRIDGE OF IMPACT API - OPERATIONAL 🚀',
-        version: VERSION,
-        environment: process.env.NODE_ENV
-    });
-});
-
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy', version: VERSION });
-});
-
-// 3. MIDDLEWARE
+// 2. MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+app.use(helmet({
+    crossOriginResourcePolicy: false, // Important for serving images from Cloudinary/Local
+}));
 
-// Ensure uploads directory exists and serve it statically
-const uploadsDir = path.join(__dirname, 'uploads');
-const casesDir = path.join(uploadsDir, 'cases');
+// 3. DIAGNOSTICS
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'BRIDGE OF IMPACT API - OPERATIONAL 🚀',
+        version: VERSION
+    });
+});
 
-try {
-    if (!fs.existsSync(casesDir)) {
-        fs.mkdirSync(casesDir, { recursive: true });
-        console.log('>>> [FS] Created uploads/cases directory');
-    }
-} catch (e) {
-    console.warn('[Warning] Uploads dir creation skip:', e.message);
-}
-
-// SERVE UPLOADS FOLDER WITH EXPLICIT CORS (FOR PERMANENT ACCESS)
-app.use('/uploads', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
-}, express.static(uploadsDir));
+app.get('/health', (req, res) => res.status(200).json({ status: 'healthy', version: VERSION }));
 
 // 4. API ROUTES
 console.log('Registering routes...');
@@ -94,25 +55,16 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
 
-// 5. Database (Asynchronous)
-console.log('Connecting to database...');
-connectDB().then(() => {
-    console.log('✅ Background Database Connection Successful');
-}).catch(err => {
-    console.error('❌ Background Database Connection Failed:', err.message);
-});
-
-// 6. Static Files
+// 5. STATIC FILES (Frontend)
 const clientDistPath = path.join(__dirname, '../client/dist');
 if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
-    console.log('Serving production static assets...');
     app.use(express.static(clientDistPath));
 }
 
-// 7. Global Catch-all & Error Handling
+// 6. ERROR HANDLING
 app.use(require('./middleware/errorMiddleware'));
 
-// The absolute final handler (Unified 404 & SPA Routing)
+// 7. 404 & SPA ROUTING
 app.use((req, res) => {
     if (req.originalUrl.startsWith('/api')) {
         return res.status(404).json({ error: 'API route not found' });
@@ -120,25 +72,28 @@ app.use((req, res) => {
     if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
         return res.sendFile(path.resolve(clientDistPath, 'index.html'));
     }
-    res.status(404).json({
-        message: "Not Found",
-        path: req.originalUrl,
-        hint: "Are you missing the /api prefix?",
-        version: VERSION
-    });
+    res.status(404).json({ message: "Not Found", path: req.originalUrl, version: VERSION });
 });
 
-// 8. START LISTENING (AT THE BOTTOM)
+// 8. DATABASE & START
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('------------------------------------------------');
-    console.log(`🚀 SERVER RUNNING ON PORT ${PORT} (v${VERSION})`);
-    console.log('------------------------------------------------');
-});
 
-process.on('uncaughtException', (err) => {
-    console.error('>>> CRITICAL EXCEPTION:', err);
-});
+const startServer = async () => {
+    try {
+        console.log('Connecting to database...');
+        await connectDB();
+        console.log('✅ Database connected');
+
+        app.listen(PORT, () => {
+            console.log(`🚀 SERVER RUNNING ON PORT ${PORT} (v${VERSION})`);
+        });
+    } catch (err) {
+        console.error('❌ Failed to start server:', err.message);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 module.exports = app;
 
