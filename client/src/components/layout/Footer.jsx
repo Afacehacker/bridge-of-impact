@@ -39,7 +39,7 @@ const Footer = () => {
                             <li><Link to="/" className="text-slate-300 hover:text-white transition-colors">Home</Link></li>
                             <li><Link to="/cases" className="text-slate-300 hover:text-white transition-colors">Active Cases</Link></li>
                             <li><Link to="/#about" className="text-slate-300 hover:text-white transition-colors">About Mission</Link></li>
-                            <li><Link to="/#how-it-works" className="text-slate-300 hover:text-white transition-colors">How It Works</Link></li>
+                            <li><Link to="/how-it-works" className="text-slate-300 hover:text-white transition-colors">How It Works</Link></li>
                             <li><Link to="/partner" className="text-slate-300 hover:text-white transition-colors">Partner with Us</Link></li>
                         </ul>
                     </div>
@@ -49,8 +49,7 @@ const Footer = () => {
                         <h4 className="font-display font-bold text-lg mb-6 text-accent">Verification</h4>
                         <ul className="space-y-4">
                             <li className="text-slate-300">Verified by CAC</li>
-                            <li className="text-slate-400 text-sm">RC: 1234567 (Placeholder)</li>
-                            <li><Link to="/admin" className="text-slate-400 hover:text-white text-sm">Admin Portal</Link></li>
+                            <li className="text-slate-400 text-sm">RC: 1234567</li>
                         </ul>
                     </div>
 

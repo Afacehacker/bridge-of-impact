@@ -70,7 +70,7 @@ const Hero = () => {
                                 Donate Now
                                 <ChevronRight className="ml-2" size={20} />
                             </Link>
-                            <Link to="/#how-it-works" className="btn-outline text-base md:text-lg h-14 px-8">
+                            <Link to="/how-it-works" className="btn-outline text-base md:text-lg h-14 px-8">
                                 View Our Process
                             </Link>
                         </div>
